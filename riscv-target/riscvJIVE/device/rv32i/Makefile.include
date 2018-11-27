@@ -1,0 +1,36 @@
+ifeq ($(OS),Windows_NT)
+    ARCH := Windows64
+else
+    ARCH := Linux64
+endif
+
+TARGET_SIM ?= $(ROOTDIR)/riscv-jivesim/Vjive_soc_top.exe
+ifeq ($(shell command -v $(TARGET_SIM) 2> /dev/null),)
+    $(error Target simulator executable '$(TARGET_SIM)` not found)
+endif
+
+RUN_TARGET=\
+    $(TARGET_SIM) \
+        +usec=60 \
+        +srec=$(work_dir_isa)/$<.srec \
+        +syms=$(work_dir_isa)/$<.syms \
+        +vcd=$(work_dir_isa)/$(*).vcd \
+        +trc=$(work_dir_isa)/$*
+
+RISCV_PREFIX   ?= riscv32-unknown-elf-
+RISCV_GCC      ?= $(RISCV_PREFIX)gcc
+RISCV_OBJCOPY  ?= $(RISCV_PREFIX)objcopy
+RISCV_OBJDUMP  ?= $(RISCV_PREFIX)objdump
+RISCV_GCC_OPTS ?= -static -mcmodel=medany -fvisibility=hidden -nostdlib -nostartfiles
+RISCV_SEGMENTS ?= -j .text.init -j .text -j .data -j .data.string
+
+COMPILE_TARGET=\
+	$$(RISCV_GCC) $(2) $$(RISCV_GCC_OPTS) \
+		-I$(ROOTDIR)/riscv-test-env/ \
+		-I$(ROOTDIR)/riscv-test-env/p/ \
+		-I$(ROOTDIR)/riscv-target/$(RISCV_TARGET)/ \
+		-T$(ROOTDIR)/riscv-test-env/p/link.ld $$< \
+		-o $(work_dir_isa)/$$@; \
+	$$(RISCV_OBJDUMP) -D $(work_dir_isa)/$$@ > $(work_dir_isa)/$$@.objdump; \
+	$$(RISCV_OBJDUMP) -t $(work_dir_isa)/$$@ | grep _signature > $(work_dir_isa)/$$@.syms; \
+	$$(RISCV_OBJCOPY) -O srec $(RISCV_SEGMENTS) $(work_dir_isa)/$$@ $(work_dir_isa)/$$@.srec

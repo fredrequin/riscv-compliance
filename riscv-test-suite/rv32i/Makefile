@@ -5,7 +5,8 @@
 act_dir := .
 src_dir := $(act_dir)/src
 work_dir := $(ROOTDIR)/work
-work_dir_isa := $(work_dir)/$(ISA)
+#work_dir_isa := $(work_dir)/$(ISA)
+work_dir_isa := $(work_dir)
 
 include $(act_dir)/Makefrag
 
